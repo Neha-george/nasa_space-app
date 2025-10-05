@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BioQuest: NASA Research Knowledge Graph</title>
+  </head>
+  <body>
+  <div id="root"></div>
+    <link rel="stylesheet" href="./css/styles.css" />
+    <!-- D3 from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <header class="app-header">
+      <div class="brand">
+        <img src="./public/vite.svg" alt="logo" class="logo" />
+        <h1>BioQuest — NASA Research Knowledge Graph</h1>
+      </div>
+      <div class="controls">
+        <input id="search" placeholder="Search projects or PI..." />
+        <select id="topicFilter"><option value="all">All Topics</option></select>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="left-panel">
+        <div class="card graph-card">
+          <div class="card-header">
+            <h2>Network</h2>
+            <div class="zoom-controls">
+              <label for="zoomRange">Zoom</label>
+              <input id="zoomRange" type="range" min="0.4" max="2" step="0.01" value="1" />
+              <button id="resetView" title="Reset zoom and position">Reset View</button>
+            </div>
+          </div>
+          <svg id="network" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="card chart-card">
+          <h2>Projects by Year</h2>
+          <svg id="trend" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </section>
+
+      <section class="right-panel">
+        <div class="card table-card">
+          <h2>Projects</h2>
+          <div id="tableWrap"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content" role="dialog" aria-modal="true">
+        <button id="closeModal" class="modal-close">×</button>
+        <div id="modalBody"></div>
+      </div>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
