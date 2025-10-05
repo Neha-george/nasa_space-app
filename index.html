@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NASA Research Database</title>
+  <link rel="icon" href="public/vite.svg" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>🧬 NASA Research Database</h1>
+      <p class="tagline">Search and explore NASA's biological research publications</p>
+    </div>
+  </header>
+
+  <main class="container grid">
+    <section class="controls">
+      <h2>🔍 Explore Research</h2>
+      <div class="control-row">
+        <label for="topicFilter">Topic</label>
+        <select id="topicFilter">
+          <option value="all">All Topics</option>
+        </select>
+        <label for="yearFilter">Year</label>
+        <select id="yearFilter">
+          <option value="all">All Years</option>
+        </select>
+      </div>
+      <div class="control-row">
+        <div class="search-container">
+          <input id="searchInput" placeholder="🔎 Search projects, authors, or keywords..." style="flex:1;" />
+          <div id="searchSuggestions" class="search-suggestions"></div>
+        </div>
+        <div class="filter-chips" id="filterChips"></div>
+        <button id="resetBtn">Reset Filters</button>
+      </div>
+      
+      <div class="quick-filters">
+        <span class="filter-label">Quick Filters:</span>
+        <button class="quick-filter" data-filter="recent">📅 Recent (2020+)</button>
+        <button class="quick-filter" data-filter="space">🚀 Space Biology</button>
+        <button class="quick-filter" data-filter="plant">🌱 Plant Science</button>
+        <button class="quick-filter" data-filter="microgravity">🌌 Microgravity</button>
+        <button class="quick-filter" data-filter="nasa">🏛️ NASA Centers</button>
+      </div>
+      <div class="stats-row" id="statsRow"></div>
+    </section>
+
+    <section class="table-section">
+      <div class="section-header-with-filters">
+        <div>
+          <h2>📚 Research Publications</h2>
+          <p class="small">Detailed publication database</p>
+          <div class="filter-status" id="filterStatus"></div>
+        </div>
+        <div class="table-filters">
+          <button class="filter-btn active" data-view="table">📋 Table View</button>
+          <button class="filter-btn" data-view="cards">🎴 Card View</button>
+          <button class="filter-btn" data-view="timeline">📅 Timeline View</button>
+        </div>
+      </div>
+      <div class="table-wrap" id="tableWrap"></div>
+    </section>
+
+
+  </main>
+
+
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>BioQuest • NASA Research Visualization • Interactive Data Explorer</small>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
