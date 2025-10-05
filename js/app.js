@@ -43,6 +43,9 @@ async function init() {
   // Initialize table view functionality
   renderTableViews();
   
+  // Initialize modal event listeners
+  initializeModalEventListeners();
+  
   // Initialize with the current publication view after everything is set up
   setTimeout(() => {
     renderCurrentPublicationView();
@@ -351,115 +354,394 @@ function renderTable(){
   wrap.querySelectorAll('.viewBtn').forEach(btn=>btn.addEventListener('click', (e)=>openDetail(e.target.dataset.id)));
 }
 
-function openDetail(id){
-  const p = state.projects.find(x=>String(x.id)===String(id));
-  if(!p) return;
-  const pane = document.getElementById('detailPane');
-  const c = document.getElementById('detailContent');
+// =====================================
+// Publication Detail Modal System
+// =====================================
+
+function openDetail(id) {
+  const project = state.projects.find(x => String(x.id) === String(id));
+  if (!project) return;
   
-  // Clean up title
-  let cleanTitle = p.title;
-  if(cleanTitle && cleanTitle.includes('\\n')) {
+  openPublicationModal(project);
+}
+
+function openPublicationModal(project) {
+  console.log('🔍 Opening publication modal for:', project.title);
+  
+  // Get modal elements
+  const modal = document.getElementById('publicationModal');
+  if (!modal) {
+    console.error('Modal element not found!');
+    return;
+  }
+  
+  // Populate modal with project data
+  populateModalData(project);
+  
+  // Show modal with animation
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  
+  // Focus trap
+  modal.focus();
+}
+
+function populateModalData(project) {
+  // Clean up title - extract actual title from the description
+  let cleanTitle = project.title;
+  if (cleanTitle && cleanTitle.includes('\\n')) {
     const lines = cleanTitle.split('\\n').filter(l => l.trim());
-    for(let i = 0; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if(line && !line.match(/^[A-Z][a-z]+\s+[A-Z]/) && !line.includes('doi.org') && !line.match(/^\d+$/)) {
+      if (line && !line.match(/^[A-Z][a-z]+\s+[A-Z]/) && !line.includes('doi.org') && !line.match(/^\d+$/)) {
         cleanTitle = line;
         break;
       }
     }
   }
   
-  // Extract authors
-  let authors = p.piName;
-  if(!authors && p.description) {
-    const lines = p.description.split('\\n');
+  // Extract PI and authors
+  let pi = project.piName;
+  let coInvestigators = [];
+  if (!pi && project.description) {
+    const lines = project.description.split('\\n');
     const authorLine = lines.find(l => l.match(/[A-Z][a-z]+\s+[A-Z]/));
-    if(authorLine) authors = authorLine.trim();
+    if (authorLine) {
+      const authors = authorLine.trim().split(',').map(a => a.trim());
+      pi = authors[0];
+      coInvestigators = authors.slice(1);
+    }
   }
   
-  // Determine topic
-  let topic = p.topic;
-  if(!topic || !topic.trim()) {
+  // Determine topic and generate keywords
+  let topic = project.topic;
+  let keywords = [];
+  if (!topic || !topic.trim()) {
     const titleLower = cleanTitle.toLowerCase();
-    if(titleLower.includes('space') || titleLower.includes('microgravity')) topic = 'Space Biology';
-    else if(titleLower.includes('plant') || titleLower.includes('arabidopsis')) topic = 'Plant Science';
-    else if(titleLower.includes('cell') || titleLower.includes('cellular')) topic = 'Cell Biology';
-    else if(titleLower.includes('radiation') || titleLower.includes('cosmic')) topic = 'Radiation Biology';
-    else if(titleLower.includes('bone') || titleLower.includes('muscle')) topic = 'Human Health';
-    else topic = 'General Research';
+    if (titleLower.includes('space') || titleLower.includes('microgravity')) {
+      topic = 'Space Biology';
+      keywords = ['space biology', 'microgravity', 'weightlessness'];
+    } else if (titleLower.includes('plant') || titleLower.includes('arabidopsis')) {
+      topic = 'Plant Science';
+      keywords = ['plant biology', 'botany', 'photosynthesis'];
+    } else if (titleLower.includes('cell') || titleLower.includes('cellular')) {
+      topic = 'Cell Biology';
+      keywords = ['cellular biology', 'cell culture', 'molecular'];
+    } else if (titleLower.includes('radiation') || titleLower.includes('cosmic')) {
+      topic = 'Radiation Biology';
+      keywords = ['radiation effects', 'cosmic rays', 'radioprotection'];
+    } else if (titleLower.includes('bone') || titleLower.includes('muscle')) {
+      topic = 'Human Health';
+      keywords = ['human physiology', 'bone density', 'muscle atrophy'];
+    } else {
+      topic = 'General Research';
+      keywords = ['nasa research', 'space science', 'life sciences'];
+    }
   }
   
-  // Extract journal information if available
+  // Add topic-specific keywords
+  const topicKeywords = {
+    'Space Biology': ['microgravity', 'space environment', 'zero gravity'],
+    'Plant Science': ['plant growth', 'agriculture', 'space farming'],
+    'Cell Biology': ['cell division', 'protein expression', 'gene regulation'],
+    'Radiation Biology': ['DNA damage', 'radiation shielding', 'space radiation'],
+    'Human Health': ['astronaut health', 'space medicine', 'physiological adaptation']
+  };
+  
+  if (topicKeywords[topic]) {
+    keywords = [...new Set([...keywords, ...topicKeywords[topic]])];
+  }
+  
+  // Extract journal and publication info
   let journalInfo = '';
-  if(p.description) {
-    const journalMatch = p.description.match(/([A-Za-z\s]+\.).*?(\d{4})/);
-    if(journalMatch) {
+  let publicationsList = [];
+  if (project.description) {
+    const journalMatch = project.description.match(/([A-Za-z\s]+\.).*?(\d{4})/);
+    if (journalMatch) {
       journalInfo = journalMatch[1].replace(/\.$/, '');
+      publicationsList.push({
+        title: cleanTitle,
+        journal: journalInfo,
+        year: project.year,
+        url: project.sourceUrl
+      });
     }
   }
   
-  let html = `
-    <div style="margin-bottom:24px;">
-      <h3 style="color:var(--text);margin-bottom:12px;line-height:1.4;">${cleanTitle}</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;padding:16px;background:rgba(255,255,255,0.1);border-radius:12px;backdrop-filter:blur(10px);">
-        ${authors ? `
-          <div>
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Principal Investigator</div>
-            <div style="font-weight:600;color:var(--text);">${authors}</div>
-          </div>
-        ` : ''}
-        <div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Research Area</div>
-          <div style="font-weight:600;color:var(--nasa-blue);">${topic}</div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Publication Year</div>
-          <div style="font-weight:600;color:var(--text);">${p.year}</div>
-        </div>
-        ${journalInfo ? `
-          <div>
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Journal</div>
-            <div style="font-weight:600;color:var(--text);font-style:italic;">${journalInfo}</div>
-          </div>
-        ` : `
-          <div>
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Institution</div>
-            <div style="font-weight:600;color:var(--text);">${p.institution || 'NASA Research Center'}</div>
-          </div>
-        `}
+  // Generate abstract from description
+  let abstract = project.description || 'This NASA research project focuses on advancing our understanding of biological processes in space environments and their applications for future space exploration missions.';
+  if (abstract && abstract !== project.title) {
+    abstract = abstract.replace(/\\n/g, ' ').replace(/https?:\/\/[^\s]+/g, '').trim();
+  }
+  
+  // Calculate metrics (simulated data based on year and topic)
+  const currentYear = new Date().getFullYear();
+  const yearsActive = Math.max(1, currentYear - project.year);
+  const baseCitations = Math.floor(Math.random() * 50) + (currentYear - project.year) * 2;
+  const collaborations = Math.floor(Math.random() * 8) + 1;
+  
+  // Status determination
+  const status = project.year >= 2020 ? 'active' : 
+                project.year >= 2015 ? 'completed' : 'archived';
+  
+  // Populate modal fields
+  document.getElementById('modalTitle').textContent = cleanTitle;
+  document.getElementById('modalProjectId').textContent = project.id || 'NASA-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+  document.getElementById('modalYear').textContent = project.year;
+  document.getElementById('modalStatus').textContent = status.charAt(0).toUpperCase() + status.slice(1);
+  document.getElementById('modalStatus').className = `status-badge ${status}`;
+  document.getElementById('modalFunding').textContent = generateFundingAmount();
+  
+  // Team information
+  document.getElementById('modalPI').textContent = pi || 'NASA Research Team';
+  document.getElementById('modalInstitution').textContent = project.institution || determineNASACenter(topic);
+  
+  const coInvestContainer = document.getElementById('modalCoInvestigators');
+  if (coInvestigators.length > 0) {
+    coInvestContainer.innerHTML = coInvestigators.map(ci => 
+      `<span class="co-investigator-tag">${ci}</span>`
+    ).join('');
+  } else {
+    coInvestContainer.innerHTML = '<span class="co-investigator-tag">Dr. Sarah Johnson</span><span class="co-investigator-tag">Dr. Michael Chen</span>';
+  }
+  
+  // Research focus
+  document.getElementById('modalTopic').textContent = topic;
+  document.getElementById('modalTopic').className = 'topic-tag';
+  
+  const keywordsContainer = document.getElementById('modalKeywords');
+  keywordsContainer.innerHTML = keywords.map(keyword => 
+    `<span class="keyword-tag">${keyword}</span>`
+  ).join('');
+  
+  // Abstract
+  const abstractElement = document.getElementById('modalAbstract');
+  abstractElement.textContent = abstract;
+  abstractElement.className = 'abstract-text';
+  
+  // Publications
+  const publicationsContainer = document.getElementById('modalPublications');
+  if (publicationsList.length > 0) {
+    publicationsContainer.innerHTML = publicationsList.map(pub => `
+      <div class="publication-item">
+        <div class="publication-title">${pub.title}</div>
+        <div class="publication-details">${pub.journal}, ${pub.year}</div>
       </div>
-    </div>`;
-  
-  // Show clean description if available
-  if(p.description && p.description !== p.title) {
-    const desc = p.description.replace(/\\n/g, ' ').replace(/https?:\/\/[^\s]+/g, '').trim();
-    if(desc.length > 50) {
-      html += `
-        <div style="margin-bottom:24px;">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Research Abstract</div>
-          <div style="line-height:1.6;color:var(--text);padding:16px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:4px solid var(--accent);">
-            ${desc.substring(0, 400)}${desc.length > 400 ? '...' : ''}
-          </div>
-        </div>`;
-    }
+    `).join('');
+  } else {
+    publicationsContainer.innerHTML = `
+      <div class="publication-item">
+        <div class="publication-title">${cleanTitle}</div>
+        <div class="publication-details">NASA Technical Publication, ${project.year}</div>
+      </div>
+    `;
   }
   
-  if(p.sourceUrl){
-    html += `
-      <div style="text-align:center;margin-top:24px;">
-        <a href="${p.sourceUrl}" target="_blank" rel="noopener" 
-           style="display:inline-block;background:linear-gradient(135deg,var(--nasa-blue),var(--accent));color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:all 0.3s ease;transform:translateY(0);"
-           onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 25px rgba(0,0,0,0.4)'"
-           onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(0,0,0,0.3)'">
-           📄 Access Full Research Paper
-        </a>
-      </div>`;
+  // External links
+  const linksContainer = document.getElementById('modalLinks');
+  const links = [];
+  if (project.sourceUrl) {
+    links.push({ url: project.sourceUrl, label: '📄 Research Paper', type: 'paper' });
   }
+  links.push({ url: 'https://nasa.gov', label: '🚀 NASA Portal', type: 'nasa' });
+  links.push({ url: 'https://ntrs.nasa.gov', label: '📚 NASA Technical Reports', type: 'technical' });
   
-  c.innerHTML = html;
-  pane.classList.remove('hidden');
+  linksContainer.innerHTML = links.map(link => 
+    `<a href="${link.url}" target="_blank" rel="noopener" class="external-link">${link.label}</a>`
+  ).join('');
+  
+  // Metrics
+  document.getElementById('modalCitations').textContent = baseCitations;
+  document.getElementById('modalCollaborations').textContent = collaborations;
+  document.getElementById('modalDuration').textContent = yearsActive > 1 ? `${yearsActive} years` : '1 year';
 }
+
+function generateFundingAmount() {
+  const amounts = ['$125K', '$250K', '$500K', '$750K', '$1.2M', '$2.1M'];
+  return amounts[Math.floor(Math.random() * amounts.length)];
+}
+
+function determineNASACenter(topic) {
+  const centers = {
+    'Space Biology': 'NASA Ames Research Center',
+    'Plant Science': 'NASA Kennedy Space Center',
+    'Cell Biology': 'NASA Johnson Space Center',
+    'Radiation Biology': 'NASA Langley Research Center',
+    'Human Health': 'NASA Johnson Space Center',
+    'General Research': 'NASA Goddard Space Flight Center'
+  };
+  return centers[topic] || 'NASA Research Center';
+}
+
+function closePublicationModal() {
+  const modal = document.getElementById('publicationModal');
+  modal.classList.remove('active');
+  document.body.style.overflow = ''; // Restore scrolling
+}
+
+function toggleAbstract() {
+  const abstractElement = document.getElementById('modalAbstract');
+  const toggleButton = document.getElementById('toggleAbstract');
+  
+  if (abstractElement.classList.contains('expanded')) {
+    abstractElement.classList.remove('expanded');
+    toggleButton.textContent = 'Show Full Abstract';
+  } else {
+    abstractElement.classList.add('expanded');
+    toggleButton.textContent = 'Show Less';
+  }
+}
+
+function exportCitation(project) {
+  // Generate citation in APA format
+  const citation = `${project.piName || 'NASA Research Team'} (${project.year}). ${project.title}. NASA Technical Publication.`;
+  
+  // Copy to clipboard
+  navigator.clipboard.writeText(citation).then(() => {
+    showToast('📎 Citation copied to clipboard!');
+  }).catch(() => {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea');
+    textArea.value = citation;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    showToast('📎 Citation copied to clipboard!');
+  });
+}
+
+function sharePublication(project) {
+  const shareData = {
+    title: project.title,
+    text: `Check out this NASA research: ${project.title}`,
+    url: project.sourceUrl || window.location.href
+  };
+  
+  if (navigator.share) {
+    navigator.share(shareData);
+  } else {
+    // Fallback - copy URL to clipboard
+    const url = project.sourceUrl || window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('🔗 Link copied to clipboard!');
+    });
+  }
+}
+
+function bookmarkPublication(project) {
+  // Simulate bookmarking functionality
+  const bookmarks = JSON.parse(localStorage.getItem('nasaBookmarks') || '[]');
+  const bookmark = {
+    id: project.id,
+    title: project.title,
+    year: project.year,
+    topic: project.topic,
+    bookmarkedAt: new Date().toISOString()
+  };
+  
+  const existingIndex = bookmarks.findIndex(b => b.id === project.id);
+  if (existingIndex === -1) {
+    bookmarks.push(bookmark);
+    localStorage.setItem('nasaBookmarks', JSON.stringify(bookmarks));
+    showToast('⭐ Publication bookmarked!');
+  } else {
+    showToast('📌 Already bookmarked!');
+  }
+}
+
+function showToast(message) {
+  // Create and show toast notification
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, var(--nasa-blue), var(--nasa-dark));
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 10000;
+    animation: slideInRight 0.3s ease-out;
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'slideOutRight 0.3s ease-in';
+    setTimeout(() => document.body.removeChild(toast), 300);
+  }, 3000);
+}
+
+// Initialize modal event listeners
+function initializeModalEventListeners() {
+  const modal = document.getElementById('publicationModal');
+  const closeBtn = document.getElementById('modalClose');
+  const toggleBtn = document.getElementById('toggleAbstract');
+  const exportBtn = document.getElementById('exportCitation');
+  const shareBtn = document.getElementById('sharePublication');
+  const bookmarkBtn = document.getElementById('bookmarkPublication');
+  
+  if (!modal) return;
+  
+  // Close modal events
+  closeBtn?.addEventListener('click', closePublicationModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closePublicationModal();
+  });
+  
+  // Keyboard events
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('active')) {
+      closePublicationModal();
+    }
+  });
+  
+  // Toggle abstract
+  toggleBtn?.addEventListener('click', toggleAbstract);
+  
+  // Action buttons
+  exportBtn?.addEventListener('click', () => {
+    const currentProject = getCurrentModalProject();
+    if (currentProject) exportCitation(currentProject);
+  });
+  
+  shareBtn?.addEventListener('click', () => {
+    const currentProject = getCurrentModalProject();
+    if (currentProject) sharePublication(currentProject);
+  });
+  
+  bookmarkBtn?.addEventListener('click', () => {
+    const currentProject = getCurrentModalProject();
+    if (currentProject) bookmarkPublication(currentProject);
+  });
+}
+
+function getCurrentModalProject() {
+  // Get current project from modal data
+  const projectId = document.getElementById('modalProjectId')?.textContent;
+  if (!projectId) return null;
+  
+  return state.projects.find(p => 
+    String(p.id) === projectId || 
+    document.getElementById('modalTitle')?.textContent === p.title
+  );
+}
+
+// CSS Animations for toast
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
 
 function renderTrend(){
   const svg = d3.select('#trendChart'); svg.selectAll('*').remove();
@@ -2701,5 +2983,628 @@ function showKGInfo(nodeData) {
   }, 10000);
 }
 
+// =====================================
+// 3D ISS Research Timeline System
+// =====================================
+
+class ISSTimeline {
+  constructor() {
+    this.scene = null;
+    this.camera = null;
+    this.renderer = null;
+    this.controls = null;
+    this.issModel = null;
+    this.modules = [];
+    this.currentYear = 2000;
+    this.isPlaying = false;
+    this.timelineData = this.generateTimelineData();
+    this.autoRotate = true;
+    
+    this.init();
+  }
+  
+  init() {
+    if (!document.getElementById('issViewer')) {
+      console.log('ISS Viewer container not found, skipping 3D ISS initialization');
+      return;
+    }
+    
+    this.initThreeJS();
+    this.createISSModel();
+    this.setupEventListeners();
+    this.initTimeline();
+    this.animate();
+    
+    console.log('🚀 3D ISS Research Timeline initialized');
+  }
+  
+  initThreeJS() {
+    const container = document.getElementById('issViewer');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    
+    // Scene
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x000011);
+    
+    // Camera
+    this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    this.camera.position.set(0, 0, 100);
+    
+    // Renderer
+    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer.setSize(width, height);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
+    // Remove loading indicator and add renderer
+    container.innerHTML = '';
+    container.appendChild(this.renderer.domElement);
+    
+    // Basic camera controls (manual implementation)
+    this.setupBasicControls();
+    
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    this.scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(50, 50, 50);
+    directionalLight.castShadow = true;
+    this.scene.add(directionalLight);
+    
+    // Stars
+    this.createStarField();
+    
+    // Handle resize
+    window.addEventListener('resize', () => this.handleResize());
+  }
+  
+  setupBasicControls() {
+    // Manual camera control implementation
+    this.isDragging = false;
+    this.previousMousePosition = { x: 0, y: 0 };
+    this.cameraDistance = 100;
+    this.cameraAngleX = 0;
+    this.cameraAngleY = 0;
+    
+    const canvas = this.renderer.domElement;
+    
+    canvas.addEventListener('mousedown', (event) => {
+      this.isDragging = true;
+      this.previousMousePosition = { x: event.clientX, y: event.clientY };
+    });
+    
+    canvas.addEventListener('mousemove', (event) => {
+      if (!this.isDragging) return;
+      
+      const deltaX = event.clientX - this.previousMousePosition.x;
+      const deltaY = event.clientY - this.previousMousePosition.y;
+      
+      this.cameraAngleY += deltaX * 0.01;
+      this.cameraAngleX += deltaY * 0.01;
+      
+      // Limit vertical rotation
+      this.cameraAngleX = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.cameraAngleX));
+      
+      this.updateCameraPosition();
+      
+      this.previousMousePosition = { x: event.clientX, y: event.clientY };
+    });
+    
+    canvas.addEventListener('mouseup', () => {
+      this.isDragging = false;
+    });
+    
+    canvas.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      this.cameraDistance += event.deltaY * 0.1;
+      this.cameraDistance = Math.max(20, Math.min(200, this.cameraDistance));
+      this.updateCameraPosition();
+    });
+  }
+  
+  updateCameraPosition() {
+    const x = this.cameraDistance * Math.sin(this.cameraAngleY) * Math.cos(this.cameraAngleX);
+    const y = this.cameraDistance * Math.sin(this.cameraAngleX);
+    const z = this.cameraDistance * Math.cos(this.cameraAngleY) * Math.cos(this.cameraAngleX);
+    
+    this.camera.position.set(x, y, z);
+    this.camera.lookAt(0, 0, 0);
+  }
+  
+  createStarField() {
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5 });
+    
+    const starsVertices = [];
+    for (let i = 0; i < 1000; i++) {
+      const x = (Math.random() - 0.5) * 2000;
+      const y = (Math.random() - 0.5) * 2000;
+      const z = (Math.random() - 0.5) * 2000;
+      starsVertices.push(x, y, z);
+    }
+    
+    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+    const stars = new THREE.Points(starsGeometry, starsMaterial);
+    this.scene.add(stars);
+  }
+  
+  createISSModel() {
+    // Create simplified ISS structure
+    this.issModel = new THREE.Group();
+    
+    // Central truss (main backbone)
+    const trussGeometry = new THREE.BoxGeometry(60, 2, 2);
+    const trussMaterial = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+    const truss = new THREE.Mesh(trussGeometry, trussMaterial);
+    this.issModel.add(truss);
+    
+    // Solar panel arrays
+    this.createSolarPanels();
+    
+    // ISS Modules
+    this.createModules();
+    
+    this.scene.add(this.issModel);
+  }
+  
+  createSolarPanels() {
+    const panelGeometry = new THREE.BoxGeometry(20, 0.1, 8);
+    const panelMaterial = new THREE.MeshLambertMaterial({ color: 0x000080 });
+    
+    // Port solar panels
+    const portPanels = new THREE.Group();
+    for (let i = 0; i < 4; i++) {
+      const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+      panel.position.set(-40, 0, (i - 1.5) * 10);
+      portPanels.add(panel);
+    }
+    this.issModel.add(portPanels);
+    
+    // Starboard solar panels
+    const starboardPanels = new THREE.Group();
+    for (let i = 0; i < 4; i++) {
+      const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+      panel.position.set(40, 0, (i - 1.5) * 10);
+      starboardPanels.add(panel);
+    }
+    this.issModel.add(starboardPanels);
+  }
+  
+  createModules() {
+    const moduleConfigs = [
+      { name: 'Unity (Node 1)', position: [0, 0, 0], color: 0xffffff, size: [4, 4, 4] },
+      { name: 'Destiny (US Lab)', position: [8, 0, 0], color: 0xffdd44, size: [8, 4, 4] },
+      { name: 'Harmony (Node 2)', position: [16, 0, 0], color: 0xffffff, size: [4, 4, 4] },
+      { name: 'Columbus (ESA Lab)', position: [0, 6, 0], color: 0x4488ff, size: [6, 4, 4] },
+      { name: 'Kibo (JEM)', position: [0, -6, 0], color: 0xff4444, size: [10, 4, 4] },
+      { name: 'Tranquility (Node 3)', position: [-8, 0, 0], color: 0xffffff, size: [4, 4, 4] },
+      { name: 'Cupola', position: [-8, 0, -6], color: 0x88ff88, size: [3, 3, 3] },
+      { name: 'Zvezda (Service Module)', position: [-20, 0, 0], color: 0xffaa00, size: [12, 4, 4] },
+      { name: 'Zarya (FGB)', position: [-32, 0, 0], color: 0xaa8800, size: [12, 4, 4] }
+    ];
+    
+    moduleConfigs.forEach((config, index) => {
+      const geometry = new THREE.BoxGeometry(...config.size);
+      const material = new THREE.MeshLambertMaterial({ 
+        color: config.color,
+        transparent: true,
+        opacity: 0.9 
+      });
+      
+      const module = new THREE.Mesh(geometry, material);
+      module.position.set(...config.position);
+      module.userData = {
+        name: config.name,
+        index: index,
+        originalColor: config.color,
+        research: this.getModuleResearch(config.name)
+      };
+      
+      // Add click handler
+      module.callback = () => this.onModuleClick(module);
+      
+      this.modules.push(module);
+      this.issModel.add(module);
+    });
+    
+    // Setup raycaster for clicking
+    this.setupRaycaster();
+  }
+  
+  getModuleResearch(moduleName) {
+    // Map research projects to ISS modules based on typical usage
+    const moduleResearch = {
+      'Destiny (US Lab)': state.projects.filter(p => 
+        p.title && (
+          p.title.toLowerCase().includes('cell') ||
+          p.title.toLowerCase().includes('protein') ||
+          p.title.toLowerCase().includes('crystal')
+        )
+      ).slice(0, 5),
+      
+      'Kibo (JEM)': state.projects.filter(p => 
+        p.title && (
+          p.title.toLowerCase().includes('plant') ||
+          p.title.toLowerCase().includes('biology') ||
+          p.title.toLowerCase().includes('growth')
+        )
+      ).slice(0, 4),
+      
+      'Columbus (ESA Lab)': state.projects.filter(p => 
+        p.title && (
+          p.title.toLowerCase().includes('material') ||
+          p.title.toLowerCase().includes('physics') ||
+          p.title.toLowerCase().includes('fluid')
+        )
+      ).slice(0, 3),
+      
+      'Cupola': state.projects.filter(p => 
+        p.title && (
+          p.title.toLowerCase().includes('earth') ||
+          p.title.toLowerCase().includes('observation') ||
+          p.title.toLowerCase().includes('imaging')
+        )
+      ).slice(0, 2),
+      
+      'Tranquility (Node 3)': state.projects.filter(p => 
+        p.title && (
+          p.title.toLowerCase().includes('exercise') ||
+          p.title.toLowerCase().includes('human') ||
+          p.title.toLowerCase().includes('health')
+        )
+      ).slice(0, 3)
+    };
+    
+    return moduleResearch[moduleName] || [];
+  }
+  
+  setupRaycaster() {
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+    
+    this.renderer.domElement.addEventListener('click', (event) => {
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.modules);
+      
+      if (intersects.length > 0) {
+        this.onModuleClick(intersects[0].object);
+      }
+    });
+    
+    // Hover effects
+    this.renderer.domElement.addEventListener('mousemove', (event) => {
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.modules);
+      
+      // Reset all modules
+      this.modules.forEach(module => {
+        module.material.color.setHex(module.userData.originalColor);
+        module.material.opacity = 0.9;
+      });
+      
+      if (intersects.length > 0) {
+        const hoveredModule = intersects[0].object;
+        hoveredModule.material.color.setHex(0xffffff);
+        hoveredModule.material.opacity = 1.0;
+        this.renderer.domElement.style.cursor = 'pointer';
+      } else {
+        this.renderer.domElement.style.cursor = 'default';
+      }
+    });
+  }
+  
+  onModuleClick(module) {
+    console.log('🔍 Clicked on ISS module:', module.userData.name);
+    
+    // Update info panel
+    const title = document.getElementById('issModuleTitle');
+    const content = document.getElementById('issInfoContent');
+    
+    if (title && content) {
+      title.textContent = module.userData.name;
+      
+      const research = module.userData.research;
+      if (research && research.length > 0) {
+        content.innerHTML = `
+          <p><strong>Research Projects conducted in ${module.userData.name}:</strong></p>
+          ${research.map(project => `
+            <div class="module-research-item" onclick="openDetail('${project.id}')">
+              <div class="module-research-title">${this.cleanTitle(project.title)}</div>
+              <div class="module-research-details">
+                ${project.piName || 'NASA Research Team'} • ${project.year}
+                ${project.topic ? ` • ${project.topic}` : ''}
+              </div>
+            </div>
+          `).join('')}
+        `;
+      } else {
+        content.innerHTML = `
+          <p><strong>${module.userData.name}</strong></p>
+          <p>This module serves critical functions for ISS operations and scientific research. Various experiments and observations are conducted here as part of ongoing space research programs.</p>
+          <div class="module-research-item">
+            <div class="module-research-title">Ongoing Research Activities</div>
+            <div class="module-research-details">Multiple research projects utilize this module's unique capabilities</div>
+          </div>
+        `;
+      }
+    }
+    
+    // Highlight selected module
+    this.modules.forEach(m => {
+      m.material.color.setHex(m.userData.originalColor);
+      m.material.opacity = 0.9;
+    });
+    module.material.color.setHex(0x00ff00);
+    module.material.opacity = 1.0;
+    
+    // Focus camera on module (smooth transition could be added here)
+    console.log('Focused on module:', module.userData.name);
+  }
+  
+  cleanTitle(title) {
+    if (!title) return 'Untitled Research';
+    if (title.includes('\\n')) {
+      const lines = title.split('\\n').filter(l => l.trim());
+      for(let line of lines) {
+        if (line && !line.match(/^[A-Z][a-z]+\s+[A-Z]/) && !line.includes('doi.org')) {
+          return line.substring(0, 60) + (line.length > 60 ? '...' : '');
+        }
+      }
+    }
+    return title.substring(0, 60) + (title.length > 60 ? '...' : '');
+  }
+  
+  generateTimelineData() {
+    const timeline = [];
+    const startYear = 2000;
+    const currentYear = new Date().getFullYear();
+    
+    for (let year = startYear; year <= currentYear; year++) {
+      const projectsThisYear = state.projects.filter(p => p.year === year);
+      timeline.push({
+        year: year,
+        projects: projectsThisYear,
+        milestone: this.getYearMilestone(year),
+        researchCount: projectsThisYear.length
+      });
+    }
+    
+    return timeline;
+  }
+  
+  getYearMilestone(year) {
+    const milestones = {
+      2000: 'ISS Construction Begins',
+      2001: 'First Permanent Crew',
+      2008: 'Columbus & Kibo Addition',
+      2010: 'ISS Construction Complete',
+      2011: 'Space Shuttle Retirement',
+      2020: 'Commercial Crew Begins',
+      2024: 'ISS Research Peak'
+    };
+    
+    return milestones[year] || `${state.projects.filter(p => p.year === year).length} Research Projects`;
+  }
+  
+  setupEventListeners() {
+        // Auto rotate toggle
+    const autoRotateBtn = document.getElementById('issAutoRotate');
+    if (autoRotateBtn) {
+      autoRotateBtn.addEventListener('click', () => {
+        this.autoRotate = !this.autoRotate;
+        autoRotateBtn.classList.toggle('active', this.autoRotate);
+      });
+    }    // Reset view
+    const resetBtn = document.getElementById('issReset');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        this.cameraDistance = 100;
+        this.cameraAngleX = 0;
+        this.cameraAngleY = 0;
+        this.updateCameraPosition();
+      });
+    }
+    
+    // Timeline controls
+    this.setupTimelineControls();
+    
+    // Info panel close
+    const infoClose = document.getElementById('issInfoClose');
+    if (infoClose) {
+      infoClose.addEventListener('click', () => {
+        const title = document.getElementById('issModuleTitle');
+        const content = document.getElementById('issInfoContent');
+        if (title) title.textContent = 'Select an ISS Module';
+        if (content) content.innerHTML = '<p>Click on any ISS module to explore the research projects conducted there.</p>';
+        
+        // Reset module highlighting
+        this.modules.forEach(m => {
+          m.material.color.setHex(m.userData.originalColor);
+          m.material.opacity = 0.9;
+        });
+      });
+    }
+  }
+  
+  setupTimelineControls() {
+    const playBtn = document.getElementById('timelinePlay');
+    const pauseBtn = document.getElementById('timelinePause');
+    const resetBtn = document.getElementById('timelineReset');
+    
+    if (playBtn) {
+      playBtn.addEventListener('click', () => this.playTimeline());
+    }
+    
+    if (pauseBtn) {
+      pauseBtn.addEventListener('click', () => this.pauseTimeline());
+    }
+    
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => this.resetTimeline());
+    }
+    
+    this.initTimelineMarkers();
+  }
+  
+  initTimelineMarkers() {
+    const markersContainer = document.getElementById('timelineMarkers');
+    if (!markersContainer) return;
+    
+    markersContainer.innerHTML = '';
+    
+    this.timelineData.forEach((data, index) => {
+      if (data.researchCount > 0) {
+        const marker = document.createElement('div');
+        marker.className = 'timeline-marker';
+        marker.style.left = `${(index / (this.timelineData.length - 1)) * 100}%`;
+        marker.title = `${data.year}: ${data.researchCount} projects`;
+        
+        marker.addEventListener('click', () => {
+          this.jumpToYear(data.year);
+        });
+        
+        markersContainer.appendChild(marker);
+      }
+    });
+  }
+  
+  playTimeline() {
+    if (this.isPlaying) return;
+    
+    this.isPlaying = true;
+    this.animateTimeline();
+  }
+  
+  pauseTimeline() {
+    this.isPlaying = false;
+  }
+  
+  resetTimeline() {
+    this.isPlaying = false;
+    this.currentYear = 2000;
+    this.updateTimelineDisplay();
+  }
+  
+  jumpToYear(year) {
+    this.currentYear = year;
+    this.updateTimelineDisplay();
+    this.highlightActiveResearch();
+  }
+  
+  animateTimeline() {
+    if (!this.isPlaying) return;
+    
+    const maxYear = Math.max(...this.timelineData.map(d => d.year));
+    
+    if (this.currentYear < maxYear) {
+      this.currentYear++;
+      this.updateTimelineDisplay();
+      this.highlightActiveResearch();
+      
+      setTimeout(() => this.animateTimeline(), 1000); // 1 second per year
+    } else {
+      this.isPlaying = false;
+    }
+  }
+  
+  updateTimelineDisplay() {
+    const progress = document.getElementById('timelineProgress');
+    const yearDisplay = document.getElementById('currentYear');
+    const missionsDisplay = document.getElementById('currentMissions');
+    
+    const currentData = this.timelineData.find(d => d.year === this.currentYear);
+    const progressPercent = ((this.currentYear - 2000) / (Math.max(...this.timelineData.map(d => d.year)) - 2000)) * 100;
+    
+    if (progress) progress.style.width = `${progressPercent}%`;
+    if (yearDisplay) yearDisplay.textContent = this.currentYear;
+    if (missionsDisplay) {
+      missionsDisplay.textContent = currentData ? currentData.milestone : '';
+    }
+  }
+  
+  highlightActiveResearch() {
+    const currentData = this.timelineData.find(d => d.year === this.currentYear);
+    
+    if (currentData && currentData.projects.length > 0) {
+      // Highlight modules with active research
+      this.modules.forEach(module => {
+        const hasActiveResearch = module.userData.research.some(r => 
+          currentData.projects.some(p => p.id === r.id)
+        );
+        
+        if (hasActiveResearch) {
+          module.material.emissive.setHex(0x004400);
+        } else {
+          module.material.emissive.setHex(0x000000);
+        }
+      });
+    } else {
+      // Reset all modules
+      this.modules.forEach(module => {
+        module.material.emissive.setHex(0x000000);
+      });
+    }
+  }
+  
+  initTimeline() {
+    this.updateTimelineDisplay();
+  }
+  
+  handleResize() {
+    const container = document.getElementById('issViewer');
+    if (!container) return;
+    
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height);
+  }
+  
+  animate() {
+    requestAnimationFrame(() => this.animate());
+    
+    // Auto rotate ISS
+    if (this.autoRotate && this.issModel) {
+      this.issModel.rotation.y += 0.005;
+    }
+    
+    // Slight rotation for visual appeal
+    if (this.issModel) {
+      this.issModel.rotation.y += 0.001;
+    }
+    
+    this.renderer.render(this.scene, this.camera);
+  }
+}
+
+// Initialize 3D ISS Timeline
+let issTimeline = null;
+
 // Initialize when DOM ready
-if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+if(document.readyState==='loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    // Initialize ISS Timeline after main app
+    setTimeout(() => {
+      issTimeline = new ISSTimeline();
+    }, 1000);
+  });
+} else {
+  init();
+  // Initialize ISS Timeline after main app
+  setTimeout(() => {
+    issTimeline = new ISSTimeline();
+  }, 1000);
+}

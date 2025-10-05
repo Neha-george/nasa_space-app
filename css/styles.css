@@ -1150,3 +1150,777 @@ h2 {
 .node-circle{stroke:#fff;stroke-width:1.2}
 .node-label{font-size:11px;pointer-events:none}
 .link{stroke:#9aa7ff;stroke-opacity:0.5}
+
+/* =====================================
+   Publication Detail Modal Styles
+   ===================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(50px) scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-content {
+  background: linear-gradient(135deg, var(--card) 0%, rgba(30, 38, 63, 0.95) 100%);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  box-shadow: var(--shadow-lg);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+  backdrop-filter: blur(20px);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+  background: linear-gradient(135deg, var(--nasa-blue) 0%, var(--nasa-dark) 100%);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.modal-body {
+  padding: 32px;
+  color: var(--text);
+}
+
+.modal-section {
+  margin-bottom: 32px;
+}
+
+.modal-section:last-child {
+  margin-bottom: 0;
+}
+
+.modal-section h3 {
+  margin: 0 0 16px 0;
+  color: var(--nasa-light);
+  font-size: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-label {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item span:not(.info-label) {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+  background: rgba(39, 174, 96, 0.2);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.status-badge.completed {
+  background: rgba(74, 144, 226, 0.2);
+  color: var(--nasa-light);
+  border: 1px solid var(--nasa-light);
+}
+
+.status-badge.planning {
+  background: rgba(243, 156, 18, 0.2);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.topic-tag {
+  display: inline-block;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, var(--nasa-blue) 0%, var(--nasa-dark) 100%);
+  color: white;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.keywords-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.keyword-tag {
+  padding: 4px 10px;
+  background: rgba(74, 144, 226, 0.1);
+  color: var(--nasa-light);
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.abstract-text {
+  background: rgba(15, 20, 25, 0.5);
+  padding: 16px;
+  border-radius: var(--border-radius-sm);
+  border-left: 4px solid var(--nasa-blue);
+  margin-top: 8px;
+  line-height: 1.7;
+  max-height: 120px;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.abstract-text.expanded {
+  max-height: none;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--nasa-light);
+  cursor: pointer;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  transition: var(--transition);
+}
+
+.toggle-btn:hover {
+  color: var(--nasa-blue);
+}
+
+.co-investigators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.co-investigator-tag {
+  padding: 4px 10px;
+  background: rgba(243, 156, 18, 0.1);
+  color: var(--accent-light);
+  border: 1px solid rgba(243, 156, 18, 0.3);
+  border-radius: 16px;
+  font-size: 0.8rem;
+}
+
+.publications-list {
+  margin-top: 8px;
+}
+
+.publication-item {
+  padding: 12px;
+  background: rgba(15, 20, 25, 0.3);
+  border-radius: var(--border-radius-sm);
+  border-left: 3px solid var(--success);
+  margin-bottom: 8px;
+}
+
+.publication-item:last-child {
+  margin-bottom: 0;
+}
+
+.publication-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.publication-details {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.links-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--nasa-blue) 0%, var(--nasa-dark) 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.external-link:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.metric-item {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(30, 58, 95, 0.1) 100%);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(74, 144, 226, 0.2);
+}
+
+.metric-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--nasa-light);
+  margin-bottom: 4px;
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-footer {
+  padding: 24px 32px;
+  border-top: 1px solid rgba(74, 144, 226, 0.2);
+  background: rgba(15, 20, 25, 0.3);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+.btn-primary, .btn-secondary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--nasa-blue) 0%, var(--nasa-dark) 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+  background: rgba(127, 140, 141, 0.1);
+  color: var(--text);
+  border: 1px solid rgba(127, 140, 141, 0.3);
+}
+
+.btn-secondary:hover {
+  background: rgba(127, 140, 141, 0.2);
+}
+
+/* Responsive Design for Modal */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+  
+  .modal-content {
+    max-height: 95vh;
+  }
+  
+  .modal-header, .modal-body, .modal-footer {
+    padding: 20px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =====================================
+   3D ISS Research Timeline Styles
+   ===================================== */
+
+.iss-timeline-section {
+  background: linear-gradient(135deg, var(--card) 0%, rgba(15, 20, 25, 0.95) 100%);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(74, 144, 226, 0.2);
+  margin-top: 32px;
+  overflow: hidden;
+}
+
+.iss-timeline-section .section-header {
+  padding: 24px 32px;
+  border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+  background: linear-gradient(135deg, var(--nasa-blue) 0%, var(--nasa-dark) 100%);
+}
+
+.iss-timeline-section .section-header h2 {
+  margin: 0 0 8px 0;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iss-timeline-section .section-header .small {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 16px 0;
+}
+
+.iss-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.iss-controls .btn-secondary {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  transition: var(--transition);
+}
+
+.iss-controls .btn-secondary:hover,
+.iss-controls .btn-secondary.active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.iss-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0;
+  min-height: 600px;
+}
+
+.iss-3d-viewer {
+  position: relative;
+  background: linear-gradient(180deg, #000011 0%, #000033 50%, #001155 100%);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iss-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: white;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid var(--nasa-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.iss-info-panel {
+  background: rgba(15, 20, 25, 0.95);
+  border-left: 1px solid rgba(74, 144, 226, 0.2);
+  padding: 0;
+  overflow-y: auto;
+}
+
+.iss-info-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(30, 58, 95, 0.1) 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iss-info-header h3 {
+  margin: 0;
+  color: var(--nasa-light);
+  font-size: 1.1rem;
+}
+
+.info-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+.info-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.iss-info-content {
+  padding: 20px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.module-research-item {
+  background: rgba(74, 144, 226, 0.1);
+  border: 1px solid rgba(74, 144, 226, 0.2);
+  border-radius: var(--border-radius-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.module-research-item:hover {
+  background: rgba(74, 144, 226, 0.2);
+  transform: translateY(-1px);
+}
+
+.module-research-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.module-research-details {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.iss-timeline {
+  padding: 24px 32px;
+  border-top: 1px solid rgba(74, 144, 226, 0.2);
+  background: rgba(15, 20, 25, 0.5);
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.timeline-header h3 {
+  margin: 0;
+  color: var(--nasa-light);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.timeline-btn {
+  background: rgba(74, 144, 226, 0.1);
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  color: var(--nasa-light);
+  padding: 6px 12px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: var(--transition);
+}
+
+.timeline-btn:hover {
+  background: rgba(74, 144, 226, 0.2);
+  transform: translateY(-1px);
+}
+
+.timeline-track {
+  position: relative;
+  height: 8px;
+  background: rgba(74, 144, 226, 0.2);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.timeline-progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--nasa-blue) 0%, var(--accent) 100%);
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.5s ease;
+}
+
+.timeline-markers {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.timeline-marker {
+  position: absolute;
+  width: 4px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.timeline-marker:hover {
+  background: var(--accent-light);
+  transform: scaleY(1.2);
+}
+
+.timeline-marker.active {
+  background: var(--success);
+  transform: scaleY(1.5);
+}
+
+.timeline-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.current-year {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--nasa-light);
+}
+
+.current-missions {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: right;
+  max-width: 200px;
+}
+
+/* ISS Module Highlighting */
+.iss-module {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.iss-module:hover {
+  filter: brightness(1.5);
+}
+
+.iss-module.active {
+  filter: brightness(2) saturate(1.5);
+}
+
+.iss-module.research-active {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    filter: brightness(1) saturate(1);
+  }
+  50% { 
+    filter: brightness(1.8) saturate(1.8);
+  }
+}
+
+/* Stars background animation */
+.iss-3d-viewer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(2px 2px at 20px 30px, white, transparent),
+    radial-gradient(2px 2px at 40px 70px, white, transparent),
+    radial-gradient(1px 1px at 90px 40px, white, transparent),
+    radial-gradient(1px 1px at 130px 80px, white, transparent),
+    radial-gradient(2px 2px at 160px 30px, white, transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: stars 20s linear infinite;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@keyframes stars {
+  from { transform: translateX(0); }
+  to { transform: translateX(-200px); }
+}
+
+/* Responsive Design for ISS Timeline */
+@media (max-width: 1024px) {
+  .iss-container {
+    grid-template-columns: 1fr;
+    min-height: 500px;
+  }
+  
+  .iss-3d-viewer {
+    min-height: 400px;
+  }
+  
+  .iss-info-panel {
+    border-left: none;
+    border-top: 1px solid rgba(74, 144, 226, 0.2);
+  }
+}
+
+@media (max-width: 768px) {
+  .iss-timeline-section .section-header {
+    padding: 20px;
+  }
+  
+  .iss-controls {
+    justify-content: center;
+  }
+  
+  .iss-timeline {
+    padding: 20px;
+  }
+  
+  .timeline-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .timeline-controls {
+    justify-content: center;
+  }
+  
+  .timeline-info {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .current-missions {
+    max-width: none;
+    text-align: center;
+  }
+}

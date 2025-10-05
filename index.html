@@ -7,6 +7,7 @@
   <link rel="icon" href="public/vite.svg" />
   <link rel="stylesheet" href="css/styles.css" />
   <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
   <header class="site-header">
@@ -65,6 +66,57 @@
       <div class="table-wrap" id="tableWrap"></div>
     </section>
 
+    <!-- 3D ISS Research Timeline Section -->
+    <section class="iss-timeline-section">
+      <div class="section-header">
+        <h2>🚀 3D ISS Research Timeline</h2>
+        <p class="small">Explore research projects conducted aboard the International Space Station</p>
+        <div class="iss-controls">
+          <button id="issAutoRotate" class="btn-secondary active">🔄 Auto Rotate</button>
+          <button id="issReset" class="btn-secondary">↻ Reset View</button>
+          <button id="issMissionToggle" class="btn-secondary">📅 Mission Timeline</button>
+        </div>
+      </div>
+      
+      <div class="iss-container">
+        <div id="issViewer" class="iss-3d-viewer">
+          <div class="iss-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading ISS 3D Model... 🚀</p>
+          </div>
+        </div>
+        
+        <div class="iss-info-panel" id="issInfoPanel">
+          <div class="iss-info-header">
+            <h3 id="issModuleTitle">Select an ISS Module</h3>
+            <button class="info-close" id="issInfoClose">×</button>
+          </div>
+          <div class="iss-info-content" id="issInfoContent">
+            <p>Click on any ISS module to explore the research projects conducted there. Each module houses different types of experiments and research facilities.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="iss-timeline" id="issTimeline">
+        <div class="timeline-header">
+          <h3>🕐 Research Timeline</h3>
+          <div class="timeline-controls">
+            <button id="timelinePlay" class="timeline-btn">▶️ Play</button>
+            <button id="timelinePause" class="timeline-btn">⏸️ Pause</button>
+            <button id="timelineReset" class="timeline-btn">⏮️ Reset</button>
+          </div>
+        </div>
+        <div class="timeline-track" id="timelineTrack">
+          <div class="timeline-progress" id="timelineProgress"></div>
+          <div class="timeline-markers" id="timelineMarkers"></div>
+        </div>
+        <div class="timeline-info" id="timelineInfo">
+          <div class="current-year" id="currentYear">2000</div>
+          <div class="current-missions" id="currentMissions">ISS Construction Begins</div>
+        </div>
+      </div>
+    </section>
+
 
   </main>
 
@@ -75,6 +127,115 @@
       <small>BioQuest • NASA Research Visualization • Interactive Data Explorer</small>
     </div>
   </footer>
+
+  <!-- Publication Detail Modal -->
+  <div id="publicationModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Publication Details</h2>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section">
+          <h3>📊 Project Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Project ID:</span>
+              <span id="modalProjectId">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Year:</span>
+              <span id="modalYear">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Status:</span>
+              <span id="modalStatus" class="status-badge">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Funding:</span>
+              <span id="modalFunding">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3>👥 Research Team</h3>
+          <div class="team-info">
+            <div class="info-item">
+              <span class="info-label">Principal Investigator:</span>
+              <span id="modalPI">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Institution:</span>
+              <span id="modalInstitution">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Co-Investigators:</span>
+              <div id="modalCoInvestigators" class="co-investigators">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3>🔬 Research Focus</h3>
+          <div class="research-info">
+            <div class="info-item">
+              <span class="info-label">Primary Topic:</span>
+              <span id="modalTopic" class="topic-tag">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Keywords:</span>
+              <div id="modalKeywords" class="keywords-container">-</div>
+            </div>
+            <div class="info-item full-width">
+              <span class="info-label">Abstract:</span>
+              <div id="modalAbstract" class="abstract-text">-</div>
+              <button id="toggleAbstract" class="toggle-btn">Show Full Abstract</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3>📄 Publications & Resources</h3>
+          <div class="publications-info">
+            <div class="info-item">
+              <span class="info-label">Publications:</span>
+              <div id="modalPublications" class="publications-list">-</div>
+            </div>
+            <div class="info-item">
+              <span class="info-label">External Links:</span>
+              <div id="modalLinks" class="links-container">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3>📈 Impact & Metrics</h3>
+          <div class="metrics-info">
+            <div class="metrics-grid">
+              <div class="metric-item">
+                <span class="metric-value" id="modalCitations">-</span>
+                <span class="metric-label">Citations</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-value" id="modalCollaborations">-</span>
+                <span class="metric-label">Collaborations</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-value" id="modalDuration">-</span>
+                <span class="metric-label">Duration</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="exportCitation" class="btn-secondary">📎 Export Citation</button>
+        <button id="sharePublication" class="btn-secondary">🔗 Share</button>
+        <button id="bookmarkPublication" class="btn-primary">⭐ Bookmark</button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
